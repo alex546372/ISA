@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISA - Internet Speed Analyzer</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1c1c1c, #2e2e2e);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .container {
+    background: #2b2b2b;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    text-align: center;
+    width: 350px;
+  }
+
+  h1 {
+    margin-bottom: 30px;
+    font-size: 24px;
+    color: #00e5ff;
+  }
+
+  .speed {
+    font-size: 28px;
+    margin: 15px 0;
+  }
+
+  .label {
+    font-size: 14px;
+    color: #aaa;
+  }
+
+  button {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 10px;
+    background: #00e5ff;
+    color: #1c1c1c;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 20px;
+  }
+
+  button:hover {
+    background: #00b8cc;
+  }
+
+  .progress-bar {
+    height: 10px;
+    width: 100%;
+    background: #444;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 15px;
+  }
+
+  .progress {
+    height: 100%;
+    width: 0%;
+    background: #00e5ff;
+    transition: width 0.2s ease;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>ISA - Internet Speed Analyzer</h1>
+
+  <div>
+    <div class="speed" id="download">0 Mbps</div>
+    <div class="label">Скорость скачивания</div>
+    <div class="progress-bar">
+      <div class="progress" id="download-progress"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="speed" id="upload">0 Mbps</div>
+    <div class="label">Скорость загрузки</div>
+    <div class="progress-bar">
+      <div class="progress" id="upload-progress"></div>
+    </div>
+  </div>
+
+  <button onclick="startTest()">Начать тест</button>
+</div>
+
+<script>
+async function startTest() {
+    document.getElementById('download').textContent = '0 Mbps';
+    document.getElementById('upload').textContent = '0 Mbps';
+    document.getElementById('download-progress').style.width = '0%';
+    document.getElementById('upload-progress').style.width = '0%';
+
+    const downloadSpeed = await measureDownloadSpeed();
+    document.getElementById('download').textContent = downloadSpeed.toFixed(2) + ' Mbps';
+    document.getElementById('download-progress').style.width = Math.min(downloadSpeed * 2, 100) + '%';
+
+    const uploadSpeed = await measureUploadSpeed();
+    document.getElementById('upload').textContent = uploadSpeed.toFixed(2) + ' Mbps';
+    document.getElementById('upload-progress').style.width = Math.min(uploadSpeed * 2, 100) + '%';
+}
+
+// Измерение скорости скачивания
+async function measureDownloadSpeed() {
+    const imageAddr = "https://speed.hetzner.de/100MB.bin"; // Можно заменить на свой сервер
+    const startTime = performance.now();
+    const response = await fetch(imageAddr, { cache: "no-store" });
+    const blob = await response.blob();
+    const endTime = performance.now();
+
+    const duration = (endTime - startTime) / 1000; // в секундах
+    const bitsLoaded = blob.size * 8;
+    const speedMbps = (bitsLoaded / duration / 1024 / 1024);
+    return speedMbps;
+}
+
+// Измерение скорости загрузки
+async function measureUploadSpeed() {
+    const data = new Uint8Array(10 * 1024 * 1024); // 10 МБ случайных данных
+    crypto.getRandomValues(data);
+    const startTime = performance.now();
+    // Можно заменить на свой endpoint на сервере
+    await fetch('https://httpbin.org/post', {
+        method: 'POST',
+        body: data
+    });
+    const endTime = performance.now();
+
+    const duration = (endTime - startTime) / 1000;
+    const bitsUploaded = data.length * 8;
+    const speedMbps = (bitsUploaded / duration / 1024 / 1024);
+    return speedMbps;
+}
+</script>
+
+</body>
+</html>
